@@ -132,4 +132,19 @@ where
             _ => unreachable!(),
         }
     }
+
+    fn destroyed(
+        state: &mut D,
+        _client: wayland_server::backend::ClientId,
+        lock: &ExtSessionLockV1,
+        _data: &SessionLockState,
+    ) {
+        let mut lock_status = state.lock_state().lock_status.lock().unwrap();
+        if lock_status.is_locked_by(lock) {
+            // The client has disconnected without unlocking the session, so reset our state.  It
+            // is up to the compositor's policy to decide whether it is allowed for another client
+            // to connect and take over the session-locker responsibility.
+            *lock_status = LockStatus::Defunct;
+        }
+    }
 }
